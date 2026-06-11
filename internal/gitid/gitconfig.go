@@ -83,6 +83,61 @@ func gitRoot(path string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+func RepoRemoteURL(path string) string {
+	root, err := gitRoot(path)
+	if err != nil {
+		return ""
+	}
+	if url := gitConfigAt(root, "remote.origin.url"); url != "" {
+		return url
+	}
+	remotes := gitRemoteNamesAt(root)
+	for _, remote := range remotes {
+		if remote == "" {
+			continue
+		}
+		if url := gitConfigAt(root, "remote."+remote+".url"); url != "" {
+			return url
+		}
+	}
+	return ""
+}
+
+func gitConfigAt(repoPath, key string) string {
+	cmd := exec.Command("git", "-C", repoPath, "config", "--get", key)
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func gitRemoteNamesAt(repoPath string) []string {
+	cmd := exec.Command("git", "-C", repoPath, "config", "--get-regexp", "^remote\\..*\\.url$")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	var remotes []string
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		parts := strings.Split(fields[0], ".")
+		if len(parts) < 3 {
+			continue
+		}
+		remotes = append(remotes, parts[1])
+	}
+	sort.Strings(remotes)
+	return remotes
+}
+
 func escapeGitValue(s string) string {
 	return strings.ReplaceAll(s, "\n", " ")
 }

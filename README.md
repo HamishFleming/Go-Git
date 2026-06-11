@@ -34,6 +34,7 @@ It also supports a one-off mode for directly applying an identity to an existing
 
 - Simple JSON-backed configuration
 - Path-based identity resolution
+- Recorded repo remote metadata on path rules
 - Git `includeIf` config generation
 - Per-identity SSH key selection
 - Direct application to a single repository
@@ -152,6 +153,7 @@ Generated include files are written to:
 ```
 
 Each identity gets its own generated `.gitconfig` file. Path rules are matched by directory prefix, with more specific paths taking priority.
+When a path rule points at a Git repository, `go-git` also records that repo's remote URL on the mapping for inspection later.
 
 CLI behavior settings are also stored in the same config file. Current settings control whether:
 

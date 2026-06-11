@@ -23,8 +23,9 @@ type User struct {
 }
 
 type PathRule struct {
-	Path string `json:"path"`
-	User string `json:"user"`
+	Path      string `json:"path"`
+	User      string `json:"user"`
+	RemoteURL string `json:"remote_url,omitempty"`
 }
 
 type Settings struct {
@@ -149,13 +150,15 @@ func AddPath(cfg *Config, path, alias string) error {
 		return err
 	}
 	p = filepath.Clean(p)
+	remoteURL := RepoRemoteURL(p)
 	for i := range cfg.Paths {
 		if samePath(cfg.Paths[i].Path, p) {
 			cfg.Paths[i].User = alias
+			cfg.Paths[i].RemoteURL = remoteURL
 			return nil
 		}
 	}
-	cfg.Paths = append(cfg.Paths, PathRule{Path: p, User: alias})
+	cfg.Paths = append(cfg.Paths, PathRule{Path: p, User: alias, RemoteURL: remoteURL})
 	sortPathRules(cfg.Paths)
 	return nil
 }

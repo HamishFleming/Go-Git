@@ -157,6 +157,14 @@ func pathCmd(args []string) error {
 		if err := gitid.Save(cfg); err != nil {
 			return err
 		}
+		r, _, ok, err := gitid.Resolve(cfg, args[1])
+		if err != nil {
+			return err
+		}
+		if ok && r.RemoteURL != "" {
+			fmt.Printf("mapped %s -> %s (%s)\n", args[1], args[2], r.RemoteURL)
+			return nil
+		}
 		fmt.Printf("mapped %s -> %s\n", args[1], args[2])
 		return nil
 	case "rm":
@@ -230,9 +238,9 @@ func listCmd() error {
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", alias, u.GitName, u.GitEmail, gitid.ShellPath(u.SSHKey))
 	}
 	fmt.Fprintln(w, "\nPATH RULES")
-	fmt.Fprintln(w, "PATH\tUSER")
+	fmt.Fprintln(w, "PATH\tUSER\tREMOTE")
 	for _, r := range cfg.Paths {
-		fmt.Fprintf(w, "%s\t%s\n", gitid.ShellPath(r.Path), r.User)
+		fmt.Fprintf(w, "%s\t%s\t%s\n", gitid.ShellPath(r.Path), r.User, r.RemoteURL)
 	}
 	return w.Flush()
 }
@@ -249,7 +257,7 @@ func resolveCmd(path string) error {
 	if !ok {
 		return fmt.Errorf("no matching path rule for %s", path)
 	}
-	fmt.Printf("path: %s\nuser: %s\nname: %s\nemail: %s\nssh_key: %s\n", gitid.ShellPath(r.Path), r.User, u.GitName, u.GitEmail, gitid.ShellPath(u.SSHKey))
+	fmt.Printf("path: %s\nuser: %s\nremote_url: %s\nname: %s\nemail: %s\nssh_key: %s\n", gitid.ShellPath(r.Path), r.User, r.RemoteURL, u.GitName, u.GitEmail, gitid.ShellPath(u.SSHKey))
 	return nil
 }
 
