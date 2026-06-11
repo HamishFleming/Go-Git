@@ -61,11 +61,26 @@ Initialize config:
 go-git init
 ```
 
-Or start with guided onboarding from your existing global Git config:
+On an empty setup, `go-git init` now offers guided onboarding from your existing global Git config.
+
+You can also run onboarding directly:
 
 ```bash
 go-git onboard
 ```
+
+To start guided setup for the current repository, run:
+
+```bash
+go-git init .
+```
+
+That interactive terminal flow can:
+
+- create a new user from your existing Git settings
+- select an existing `go-git` user
+- apply that user to the current repository
+- add a path rule for that project
 
 Add identities:
 
@@ -138,11 +153,19 @@ Generated include files are written to:
 
 Each identity gets its own generated `.gitconfig` file. Path rules are matched by directory prefix, with more specific paths taking priority.
 
+CLI behavior settings are also stored in the same config file. Current settings control whether:
+
+- `init` auto-offers onboarding on an empty config
+- project init applies the selected user to the repository by default
+- project init adds a path rule by default
+
 ## CLI Reference
 
 ```text
-go-git init
+go-git init [repo-path]
 go-git onboard
+go-git settings [list]
+go-git settings set <key> <true|false>
 go-git user add <alias> --git-name <name> --git-email <email> --ssh-key <path>
 go-git user rm <alias>
 go-git path add <path> <user-alias>
@@ -178,6 +201,26 @@ go-git resolve ~/src/open-source/go-git
 ## Environment
 
 - `GIT_ID_CONFIG_DIR`: override the default config directory
+
+## Settings
+
+Inspect current CLI settings:
+
+```bash
+go-git settings
+```
+
+Change a setting:
+
+```bash
+go-git settings set auto_onboard_on_init false
+```
+
+Available settings:
+
+- `auto_onboard_on_init`
+- `apply_user_on_project_init`
+- `map_path_on_project_init`
 
 ## Contributing
 

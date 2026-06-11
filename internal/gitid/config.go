@@ -11,8 +11,9 @@ import (
 )
 
 type Config struct {
-	Users map[string]User `json:"users"`
-	Paths []PathRule      `json:"paths"`
+	Users    map[string]User `json:"users"`
+	Paths    []PathRule      `json:"paths"`
+	Settings Settings        `json:"settings"`
 }
 
 type User struct {
@@ -26,8 +27,26 @@ type PathRule struct {
 	User string `json:"user"`
 }
 
+type Settings struct {
+	AutoOnboardOnInit  bool `json:"auto_onboard_on_init"`
+	ApplyUserOnProject bool `json:"apply_user_on_project_init"`
+	MapPathOnProject   bool `json:"map_path_on_project_init"`
+}
+
 func DefaultConfig() Config {
-	return Config{Users: map[string]User{}, Paths: []PathRule{}}
+	return Config{
+		Users:    map[string]User{},
+		Paths:    []PathRule{},
+		Settings: DefaultSettings(),
+	}
+}
+
+func DefaultSettings() Settings {
+	return Settings{
+		AutoOnboardOnInit:  true,
+		ApplyUserOnProject: true,
+		MapPathOnProject:   true,
+	}
 }
 
 func ConfigDir() (string, error) {
@@ -192,6 +211,10 @@ func SortedUsers(cfg Config) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func IsEmptyConfig(cfg Config) bool {
+	return len(cfg.Users) == 0 && len(cfg.Paths) == 0
 }
 
 func sortPathRules(paths []PathRule) {

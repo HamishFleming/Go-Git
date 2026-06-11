@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"text/tabwriter"
 
 	"go-git/internal/gitid"
@@ -24,20 +25,13 @@ func run(args []string) error {
 
 	switch args[0] {
 	case "init":
-		cfg := gitid.DefaultConfig()
-		if existing, err := gitid.Load(); err == nil && (len(existing.Users) > 0 || len(existing.Paths) > 0) {
-			cfg = existing
-		}
-		if err := gitid.Save(cfg); err != nil {
-			return err
-		}
-		path, _ := gitid.ConfigPath()
-		fmt.Println("created", path)
-		return nil
+		return initCmd(args[1:])
 	case "user":
 		return userCmd(args[1:])
 	case "path":
 		return pathCmd(args[1:])
+	case "settings":
+		return settingsCmd(args[1:])
 	case "list":
 		return listCmd()
 	case "resolve":
@@ -103,6 +97,47 @@ func userCmd(args []string) error {
 	}
 }
 
+func initCmd(args []string) error {
+	if len(args) > 1 {
+		return fmt.Errorf("usage: go-git init [repo-path]")
+	}
+	cfg := gitid.DefaultConfig()
+	if existing, err := gitid.Load(); err == nil {
+		cfg = existing
+	}
+	if err := gitid.Save(cfg); err != nil {
+		return err
+	}
+	path, _ := gitid.ConfigPath()
+	fmt.Println("initialized", path)
+
+	if len(args) == 1 {
+		result, err := gitid.RunProjectInit(&cfg, args[0], os.Stdin, os.Stdout)
+		if err != nil {
+			return err
+		}
+		if result.UserAlias == "" {
+			fmt.Println("project setup cancelled")
+			return nil
+		}
+		return gitid.Save(cfg)
+	}
+
+	if gitid.IsEmptyConfig(cfg) && cfg.Settings.AutoOnboardOnInit {
+		alias, changed, err := gitid.RunOnboarding(&cfg, os.Stdin, os.Stdout)
+		if err != nil {
+			return err
+		}
+		if changed {
+			if err := gitid.Save(cfg); err != nil {
+				return err
+			}
+			fmt.Printf("onboarded %s\n", alias)
+		}
+	}
+	return nil
+}
+
 func pathCmd(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing path subcommand")
@@ -139,6 +174,47 @@ func pathCmd(args []string) error {
 	default:
 		return fmt.Errorf("unknown path subcommand %q", args[0])
 	}
+}
+
+func settingsCmd(args []string) error {
+	cfg, err := gitid.Load()
+	if err != nil {
+		return err
+	}
+	if len(args) == 0 || args[0] == "list" {
+		return settingsListCmd(cfg)
+	}
+	if args[0] != "set" || len(args) != 3 {
+		return fmt.Errorf("usage: go-git settings [list] | go-git settings set <key> <true|false>")
+	}
+	value, err := strconv.ParseBool(args[2])
+	if err != nil {
+		return fmt.Errorf("invalid boolean %q", args[2])
+	}
+	switch args[1] {
+	case "auto_onboard_on_init":
+		cfg.Settings.AutoOnboardOnInit = value
+	case "apply_user_on_project_init":
+		cfg.Settings.ApplyUserOnProject = value
+	case "map_path_on_project_init":
+		cfg.Settings.MapPathOnProject = value
+	default:
+		return fmt.Errorf("unknown setting %q", args[1])
+	}
+	if err := gitid.Save(cfg); err != nil {
+		return err
+	}
+	fmt.Printf("set %s=%t\n", args[1], value)
+	return nil
+}
+
+func settingsListCmd(cfg gitid.Config) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "SETTING\tVALUE")
+	fmt.Fprintf(w, "auto_onboard_on_init\t%t\n", cfg.Settings.AutoOnboardOnInit)
+	fmt.Fprintf(w, "apply_user_on_project_init\t%t\n", cfg.Settings.ApplyUserOnProject)
+	fmt.Fprintf(w, "map_path_on_project_init\t%t\n", cfg.Settings.MapPathOnProject)
+	return w.Flush()
 }
 
 func listCmd() error {
@@ -220,7 +296,7 @@ func onboardCmd() error {
 	if err != nil {
 		return err
 	}
-	changed, err := gitid.RunOnboarding(&cfg, os.Stdin, os.Stdout)
+	_, changed, err := gitid.RunOnboarding(&cfg, os.Stdin, os.Stdout)
 	if err != nil {
 		return err
 	}
@@ -235,8 +311,10 @@ func usage() {
 	fmt.Print(`go git manages Git identities and SSH keys per repo/path.
 
 Commands:
-  go-git init
+  go-git init [repo-path]
   go-git onboard
+  go-git settings [list]
+  go-git settings set <key> <true|false>
   go-git user add <alias> --git-name <name> --git-email <email> --ssh-key <path>
   go-git user rm <alias>
   go-git path add <path> <user-alias>
