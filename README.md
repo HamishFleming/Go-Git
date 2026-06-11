@@ -1,6 +1,6 @@
-# git-id
+# go git
 
-`git-id` is a small Go CLI for people who work across multiple Git identities.
+`go git` is a small Go CLI for people who work across multiple Git identities.
 
 It helps you keep personal, client, and employer repositories separate by mapping directory paths to the correct:
 
@@ -21,7 +21,7 @@ Most developers who juggle more than one Git identity end up with some mix of:
 
 That works until it does not.
 
-`git-id` gives you a simple, explicit model:
+`go git` gives you a simple, explicit model:
 
 1. Define named identities.
 2. Map repo roots or directory trees to those identities.
@@ -44,13 +44,13 @@ It also supports a one-off mode for directly applying an identity to an existing
 ### Build from source
 
 ```bash
-go build -o git-id ./cmd/git-id
+go build -o go-git ./cmd/go-git
 ```
 
 ### Run without installing
 
 ```bash
-go run ./cmd/git-id --help
+go run ./cmd/go-git --help
 ```
 
 ## Quick Start
@@ -58,18 +58,24 @@ go run ./cmd/git-id --help
 Initialize config:
 
 ```bash
-git-id init
+go-git init
+```
+
+Or start with guided onboarding from your existing global Git config:
+
+```bash
+go-git onboard
 ```
 
 Add identities:
 
 ```bash
-git-id user add personal \
+go-git user add personal \
   --git-name "Hamish Fleming" \
   --git-email "hamish@example.com" \
   --ssh-key ~/.ssh/id_ed25519_personal
 
-git-id user add work \
+go-git user add work \
   --git-name "Hamish Fleming" \
   --git-email "hamish@company.com" \
   --ssh-key ~/.ssh/id_ed25519_work
@@ -78,24 +84,24 @@ git-id user add work \
 Map directories to those identities:
 
 ```bash
-git-id path add ~/code/personal personal
-git-id path add ~/work work
+go-git path add ~/code/personal personal
+go-git path add ~/work work
 ```
 
 Generate include files and print the `~/.gitconfig` block you should add:
 
 ```bash
-git-id apply
+go-git apply
 ```
 
 Example output:
 
 ```gitconfig
 [includeIf "gitdir:~/code/personal/**"]
-    path = ~/.config/git-id/includes/personal.gitconfig
+    path = ~/.config/go-git/includes/personal.gitconfig
 
 [includeIf "gitdir:~/work/**"]
-    path = ~/.config/git-id/includes/work.gitconfig
+    path = ~/.config/go-git/includes/work.gitconfig
 ```
 
 Once that block is added to `~/.gitconfig`, any repository under those paths will automatically use the matching identity and SSH key.
@@ -105,13 +111,13 @@ Once that block is added to `~/.gitconfig`, any repository under those paths wil
 If you want to apply an identity directly to the current repository instead of using path rules:
 
 ```bash
-git-id use work
+go-git use work
 ```
 
 Or target a specific repository path:
 
 ```bash
-git-id use personal ~/code/personal/my-project
+go-git use personal ~/code/personal/my-project
 ```
 
 This writes the selected identity into that repository's local `.git/config`.
@@ -121,13 +127,13 @@ This writes the selected identity into that repository's local `.git/config`.
 Configuration is stored in:
 
 ```text
-~/.config/git-id/config.json
+~/.config/go-git/config.json
 ```
 
 Generated include files are written to:
 
 ```text
-~/.config/git-id/includes/
+~/.config/go-git/includes/
 ```
 
 Each identity gets its own generated `.gitconfig` file. Path rules are matched by directory prefix, with more specific paths taking priority.
@@ -135,37 +141,38 @@ Each identity gets its own generated `.gitconfig` file. Path rules are matched b
 ## CLI Reference
 
 ```text
-git-id init
-git-id user add <alias> --git-name <name> --git-email <email> --ssh-key <path>
-git-id user rm <alias>
-git-id path add <path> <user-alias>
-git-id path rm <path>
-git-id list
-git-id resolve [path]
-git-id apply
-git-id use <user-alias> [repo-path]
+go-git init
+go-git onboard
+go-git user add <alias> --git-name <name> --git-email <email> --ssh-key <path>
+go-git user rm <alias>
+go-git path add <path> <user-alias>
+go-git path rm <path>
+go-git list
+go-git resolve [path]
+go-git apply
+go-git use <user-alias> [repo-path]
 ```
 
 ## Example Workflow
 
 ```bash
-git-id init
+go-git init
 
-git-id user add oss \
+go-git user add oss \
   --git-name "Jane Developer" \
   --git-email "jane@users.noreply.github.com" \
   --ssh-key ~/.ssh/id_ed25519_oss
 
-git-id user add client \
+go-git user add client \
   --git-name "Jane Developer" \
   --git-email "jane@client.com" \
   --ssh-key ~/.ssh/id_ed25519_client
 
-git-id path add ~/src/open-source oss
-git-id path add ~/src/client-work client
+go-git path add ~/src/open-source oss
+go-git path add ~/src/client-work client
 
-git-id apply
-git-id resolve ~/src/open-source/git-id
+go-git apply
+go-git resolve ~/src/open-source/go-git
 ```
 
 ## Environment
@@ -185,4 +192,4 @@ If you want to contribute, start by opening an issue or sending a focused PR wit
 
 ## Project Scope
 
-`git-id` is intentionally narrow. It is not trying to be a full Git wrapper, credential manager, or SSH agent replacement. The goal is to stay small, understandable, and reliable for one job: using the right Git identity in the right place.
+`go git` is intentionally narrow. It is not trying to be a full Git wrapper, credential manager, or SSH agent replacement. The goal is to stay small, understandable, and reliable for one job: using the right Git identity in the right place.

@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"git-id/internal/gitid"
+	"go-git/internal/gitid"
 )
 
 func main() {
@@ -50,6 +50,8 @@ func run(args []string) error {
 		return applyCmd()
 	case "use":
 		return useCmd(args[1:])
+	case "onboard":
+		return onboardCmd()
 	default:
 		usage()
 		return fmt.Errorf("unknown command %q", args[0])
@@ -66,7 +68,7 @@ func userCmd(args []string) error {
 	}
 	switch args[0] {
 	case "add":
-		fs := flag.NewFlagSet("git-id user add", flag.ContinueOnError)
+		fs := flag.NewFlagSet("go-git user add", flag.ContinueOnError)
 		gitName := fs.String("git-name", "", "Git user.name")
 		gitEmail := fs.String("git-email", "", "Git user.email")
 		sshKey := fs.String("ssh-key", "", "SSH private key path")
@@ -74,7 +76,7 @@ func userCmd(args []string) error {
 			return err
 		}
 		if fs.NArg() != 1 {
-			return fmt.Errorf("usage: git-id user add <alias> --git-name <name> --git-email <email> --ssh-key <path>")
+			return fmt.Errorf("usage: go-git user add <alias> --git-name <name> --git-email <email> --ssh-key <path>")
 		}
 		if err := gitid.AddUser(&cfg, fs.Arg(0), gitid.User{GitName: *gitName, GitEmail: *gitEmail, SSHKey: *sshKey}); err != nil {
 			return err
@@ -86,7 +88,7 @@ func userCmd(args []string) error {
 		return nil
 	case "rm":
 		if len(args) != 2 {
-			return fmt.Errorf("usage: git-id user rm <alias>")
+			return fmt.Errorf("usage: go-git user rm <alias>")
 		}
 		if err := gitid.RemoveUser(&cfg, args[1]); err != nil {
 			return err
@@ -112,7 +114,7 @@ func pathCmd(args []string) error {
 	switch args[0] {
 	case "add":
 		if len(args) != 3 {
-			return fmt.Errorf("usage: git-id path add <path> <user-alias>")
+			return fmt.Errorf("usage: go-git path add <path> <user-alias>")
 		}
 		if err := gitid.AddPath(&cfg, args[1], args[2]); err != nil {
 			return err
@@ -124,7 +126,7 @@ func pathCmd(args []string) error {
 		return nil
 	case "rm":
 		if len(args) != 2 {
-			return fmt.Errorf("usage: git-id path rm <path>")
+			return fmt.Errorf("usage: go-git path rm <path>")
 		}
 		if err := gitid.RemovePath(&cfg, args[1]); err != nil {
 			return err
@@ -192,7 +194,7 @@ func applyCmd() error {
 
 func useCmd(args []string) error {
 	if len(args) < 1 || len(args) > 2 {
-		return fmt.Errorf("usage: git-id use <user-alias> [repo-path]")
+		return fmt.Errorf("usage: go-git use <user-alias> [repo-path]")
 	}
 	cfg, err := gitid.Load()
 	if err != nil {
@@ -213,21 +215,38 @@ func useCmd(args []string) error {
 	return nil
 }
 
+func onboardCmd() error {
+	cfg, err := gitid.Load()
+	if err != nil {
+		return err
+	}
+	changed, err := gitid.RunOnboarding(&cfg, os.Stdin, os.Stdout)
+	if err != nil {
+		return err
+	}
+	if !changed {
+		fmt.Println("onboarding cancelled")
+		return nil
+	}
+	return gitid.Save(cfg)
+}
+
 func usage() {
-	fmt.Print(`git-id manages Git identities and SSH keys per repo/path.
+	fmt.Print(`go git manages Git identities and SSH keys per repo/path.
 
 Commands:
-  git-id init
-  git-id user add <alias> --git-name <name> --git-email <email> --ssh-key <path>
-  git-id user rm <alias>
-  git-id path add <path> <user-alias>
-  git-id path rm <path>
-  git-id list
-  git-id resolve [path]
-  git-id apply
-  git-id use <user-alias> [repo-path]
+  go-git init
+  go-git onboard
+  go-git user add <alias> --git-name <name> --git-email <email> --ssh-key <path>
+  go-git user rm <alias>
+  go-git path add <path> <user-alias>
+  go-git path rm <path>
+  go-git list
+  go-git resolve [path]
+  go-git apply
+  go-git use <user-alias> [repo-path]
 
 Environment:
-  GIT_ID_CONFIG_DIR  Override config directory, default ~/.config/git-id
+  GIT_ID_CONFIG_DIR  Override config directory, default ~/.config/go-git
 `)
 }

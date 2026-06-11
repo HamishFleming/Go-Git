@@ -38,7 +38,7 @@ func ConfigDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "git-id"), nil
+	return filepath.Join(dir, "go-git"), nil
 }
 
 func ConfigPath() (string, error) {

@@ -1,3 +1,3 @@
-module git-id
+module go-git
 
 go 1.22
